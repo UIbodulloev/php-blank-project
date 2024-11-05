@@ -1,0 +1,69 @@
+version: '3'
+
+networks:
+  network_p1:
+    name: network_p1
+
+services:
+    # PHP fpm
+    php_p1:
+      container_name: php_p1
+      build:
+        context: ./docker/php
+      restart: always
+      working_dir: /var/www/public
+      env_file:
+          - .env
+      volumes:
+        - ./:/var/www/public
+      networks:
+        - network_p1
+
+    # Nginx Service
+    nginx_p1:
+      container_name: nginx_p1
+      image: nginx:latest
+      restart: always
+      volumes:
+          - ./:/var/www/public
+          - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+          - ./docker/nginx/templates/:/etc/nginx/templates/
+      ports:
+          - "80:80"
+      networks:
+        - network_p1
+
+    # MySQL Service
+    mysql_p1:
+      container_name: mysql_p1
+      image: library/mysql:8.0
+      restart: always
+      volumes:
+        - ./mysql_data:/var/lib/mysql:rw
+      ports:
+          - "3306:3306"
+      environment:
+          SERVICE_NAME: mysql
+          MYSQL_DATABASE: db_p1
+          MYSQL_USER: mysql
+          MYSQL_PASSWORD: 12345678
+          MYSQL_ROOT_PASSWORD: 12345678
+      networks:
+        - network_p1
+
+    # PHPMyAdmin Service
+    phpmyadmin_p1:
+      container_name: phpmyadmin_p1
+      image: phpmyadmin
+      restart: always
+      ports:
+        - 81:80
+      environment:
+        PMA_HOST: mysql_p1
+        MYSQL_USER: mysql
+        MYSQL_PASSWORD: 12345678
+        MYSQL_ROOT_PASSWORD: 12345678
+      networks:
+        - network_p1
+      depends_on:
+        - mysql_p1
